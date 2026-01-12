@@ -37,8 +37,8 @@ grid = [
 
 chains_by_value = polygonize(grid)
 
-for value, chains in chains_by_value.items():
-    print(f"{value}: {chains}")
+for value, groups in chains_by_value.items():
+    print(f"{value}: {groups}")
 ```
 
 Output:
@@ -54,10 +54,11 @@ This example highlights key properties of `polygonize`:
 - Cells are grouped into **4-connected regions** using a customizable equality predicate.
 - Each distinct cell value maps to a list of **polygon groups**:
   - A polygon group is a list of **closed chains** of integer grid points.
-  - If a group has more than one chain, it is intended to be filled using the **even-odd rule**: the first chain is the outer boundary, remaining chains are holes.
-- All polygons are **rectilinear**, and **collinear vertices are removed** for compact output.
+  - If a group has more than one chain, it is intended to be filled using the **even-odd rule**: the first chain is the outer boundary, remaining chains represent holes.
+- All polygons are **rectilinear**.
+  By default, **collinear vertices are removed** for compact output; this can be disabled.
 
-Connectivity and ignored values are customizable:
+Connectivity, ignored values, and simplification are customizable:
 
 ```python
 chains_by_value = polygonize(
@@ -66,10 +67,12 @@ chains_by_value = polygonize(
     equals=lambda a, b: (a == 0) == (b == 0),
     # skip cells with value 0 entirely
     ignore=lambda v: v == 0,
+    # keep all grid corner points instead of simplifying
+    remove_collinear=False,
 )
 ```
 
-When defining `equals`, you must ensure that `equals(a, b)` is `True` only when `ignore(a) == ignore(b)`.
+When defining `equals` and `ignore`, you must ensure that `equals(a, b)` is `True` only when `ignore(a) == ignore(b)`.
 
 The result can be passed directly to the SVG and TikZ helpers described below.
 
@@ -215,7 +218,7 @@ PolyGrid converts a 2D grid to merged polygons in two main stages:
      - This produces visually pleasing outlines with rounded-corner rendering.
    - If the initial cycle does not cover all edges, it is iteratively extended:
      - Additional cycles are constructed that follow any remaining unused edges (again preferring turns) until the component is fully covered.
-   - Each cycle is simplified by removing collinear vertices, yielding compact rectilinear polygons that exactly cover the original cells.
+   - Optionally, each cycle is simplified by removing collinear vertices, yielding compact rectilinear polygons that exactly cover the original cells.
 
 The result is a mapping from cell values to polygon groups, ready for SVG or TikZ export.
 
