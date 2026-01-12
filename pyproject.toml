@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "polygonizer"
+description = "Convert raster graphics to polygons"
+dynamic = ["version"]
+readme = "ReadMe.md"
+requires-python = ">=3.11"
+license = "MPL-2.0"
+license-files = ["License"]
+authors = [{ name = "Kurt Böhm", email = "kurbo96@gmail.com" }]
+keywords = ["svg", "drawing", "vector", "tikz", "latex"]
+classifiers = [
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development",
+  "Topic :: Multimedia :: Graphics",
+  "Topic :: Text Processing :: Markup :: LaTeX",
+]
+
+[tool.setuptools.dynamic]
+version = { attr = "polygonizer.__version__" }
+
+[project.urls]
+Repository = "https://github.com/KurtBoehm/polygonizer"
+
+[project.optional-dependencies]
+dev = ["numpy", "cairosvg", "pillow", "pytest", "pytest-cov", "pytest-xdist", "PyMuPDF"]
+
+[tool.pytest]
+testpaths = ["tests"]
