@@ -1,23 +1,23 @@
-# 🧩 Polygonizer: Grids as Polygons
+# 🧩 PolyGrid: Grids as Polygons
 
-Polygonizer converts a 2D grid of values into polygons where each **contiguous region** of equal-valued cells is represented as one or more **merged polygons**, not as a grid of tiny squares.
+PolyGrid converts a 2D grid of values into polygons where each **contiguous region** of equal-valued cells is represented as one or more **merged polygons**, not as a grid of tiny squares.
 This **eliminates hideous hairline gaps** between cells within each region and **minimizes the number of points per polygon** for compact output.
 
-Polygonizer can generate:
+PolyGrid can generate:
 
 - **TikZ** paths for LaTeX
 - **SVG** paths that are aggressively minimized to save space
 
-The `pytest`-based **test suite with 100% coverage** (for both TikZ and SVG) is available in the [`tests` directory](https://github.com/KurtBoehm/polygonizer/blob/main/tests).
+The `pytest`-based **test suite with 100% coverage** (for both TikZ and SVG) is available in the [`tests` directory](https://github.com/KurtBoehm/polygrid/blob/main/tests).
 
-[![Tests with 100% coverage](https://github.com/KurtBoehm/polygonizer/actions/workflows/test.yml/badge.svg)](https://github.com/KurtBoehm/polygonizer/actions/workflows/test.yml)
+[![Tests with 100% coverage](https://github.com/KurtBoehm/polygrid/actions/workflows/test.yml/badge.svg)](https://github.com/KurtBoehm/polygrid/actions/workflows/test.yml)
 
 ## 📦 Installation
 
-Polygonizer is available [on PyPI](https://pypi.org/project/polygonizer/) and can be installed via `pip`:
+PolyGrid is available [on PyPI](https://pypi.org/project/polygrid/) and can be installed via `pip`:
 
 ```sh
-pip install polygonizer
+pip install polygrid
 ```
 
 ## 🧩 Core API
@@ -25,7 +25,7 @@ pip install polygonizer
 The main entry point is `polygonize`, which takes a 2D grid with arbitrary values:
 
 ```python
-from polygonizer import polygonize
+from polygrid import polygonize
 
 grid = [
     [0, 0, 0, 0, 0],
@@ -78,7 +78,7 @@ The result can be passed directly to the SVG and TikZ helpers described below.
 `svg_paths` turns the polygon chains into very compact SVG `path` data:
 
 ```python
-from polygonizer import polygonize, svg_paths
+from polygrid import polygonize, svg_paths
 
 w, g, b = "white", "green", "black"
 
@@ -114,7 +114,7 @@ The generated path data is very compact:
 - For each step, absolute vs. relative commands are chosen to minimize output length.
 - With `relative=True`, relative moves can be used between successive groups when that shortens the output.
 
-You can transform coordinates via `point_transform`, which must yield numeric coordinates that support subtraction and string formatting; Polygonizer provides minimized formatting for `int`, `float`, and `Decimal`:
+You can transform coordinates via `point_transform`, which must yield numeric coordinates that support subtraction and string formatting; PolyGrid provides minimized formatting for `int`, `float`, and `Decimal`:
 
 ```python
 paths_by_value = svg_paths(
@@ -138,7 +138,7 @@ The output is suitable for embedding directly into an SVG document:
 `tikz_paths` converts polygon chains into TikZ path specifications:
 
 ```python
-from polygonizer import polygonize, tikz_paths
+from polygrid import polygonize, tikz_paths
 
 w, g, b = "white", "green", "black"
 
@@ -190,7 +190,7 @@ The TikZ output is designed to integrate easily into a `tikzpicture`:
 
 ## ⚠️ Limitations and Workarounds
 
-Polygonizer is optimized for single-colour regions on a solid background that you ignore (e.g. QR codes, monochrome glyphs, or logos with clean, blocky regions).
+PolyGrid is optimized for single-colour regions on a solid background that you ignore (e.g. QR codes, monochrome glyphs, or logos with clean, blocky regions).
 In these cases, each region becomes one or a few merged polygons, and there are no internal gaps within a region.
 
 For complex pixel art or images with many adjacent colours, each colour is turned into its own set of polygons that merely share boundaries.
@@ -201,7 +201,7 @@ This disables antialiasing of edges and makes the output behave much more like t
 
 ## 🧠 Algorithm Overview
 
-Polygonizer converts a 2D grid to merged polygons in two main stages:
+PolyGrid converts a 2D grid to merged polygons in two main stages:
 
 1. **Connected components and boundary extraction**:
    - Performs a 4-neighbour BFS flood fill over the grid for each non-ignored value.
@@ -221,7 +221,7 @@ The result is a mapping from cell values to polygon groups, ready for SVG or Tik
 
 ## 🧪 Testing
 
-Polygonizer includes `pytest`-based tests that cover the entire code base with 100% code coverage.
+PolyGrid includes `pytest`-based tests that cover the entire code base with 100% code coverage.
 
 Development dependencies can be installed via the `dev` extra:
 
@@ -244,4 +244,4 @@ pytest --cov -n auto  # or a fixed number of workers
 
 ## 📜 Licence
 
-This library is licensed under the Mozilla Public Licence 2.0, provided in [`License`](https://github.com/KurtBoehm/polygonizer/blob/main/License).
+This library is licensed under the Mozilla Public Licence 2.0, provided in [`License`](https://github.com/KurtBoehm/polygrid/blob/main/License).

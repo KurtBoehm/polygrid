@@ -1,4 +1,4 @@
-# This file is part of https://github.com/KurtBoehm/polygonizer.
+# This file is part of https://github.com/KurtBoehm/polygrid.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@ import cairosvg
 import numpy as np
 from PIL import Image
 
-from polygonizer import PointChainMap, polygonize, svg_paths, tikz_paths
+from polygrid import PointChainMap, polygonize, svg_paths, tikz_paths
 
 T = TypeVar("T")
 
@@ -96,7 +96,7 @@ def render_tikz(
 
     for color, paths in path_map:
         if monochrome:
-            # In monochrome mode, the polygonizer should only use a single color key.
+            # In monochrome mode, the output should only use a single color key.
             assert color == 0
             fills.append(f"  \\fill[even odd rule] {' '.join(paths)};")
         else:

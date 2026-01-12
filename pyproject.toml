@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "polygonizer"
+name = "polygrid"
 description = "Convert raster graphics to polygons"
 dynamic = ["version"]
 readme = "ReadMe.md"
@@ -25,10 +25,10 @@ classifiers = [
 ]
 
 [tool.setuptools.dynamic]
-version = { attr = "polygonizer.__version__" }
+version = { attr = "polygrid.__version__" }
 
 [project.urls]
-Repository = "https://github.com/KurtBoehm/polygonizer"
+Repository = "https://github.com/KurtBoehm/polygrid"
 
 [project.optional-dependencies]
 dev = ["numpy", "cairosvg", "pillow", "pytest", "pytest-cov", "pytest-xdist", "PyMuPDF"]
