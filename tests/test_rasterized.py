@@ -9,7 +9,7 @@ import subprocess
 from collections.abc import Iterable
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Callable, TypeVar, override
+from typing import Any, Callable, TypeVar
 
 import cairosvg
 import fitz
@@ -40,11 +40,9 @@ class FloatWrap:
     def __sub__(self, value: "FloatWrap", /) -> "FloatWrap":
         return FloatWrap(self.value - value.value)
 
-    @override
     def __str__(self) -> str:
         return f"{self.value:g}"
 
-    @override
     def __eq__(self, value: Any, /) -> bool:
         return self.value == value
 
