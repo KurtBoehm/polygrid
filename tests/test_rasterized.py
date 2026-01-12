@@ -6,11 +6,13 @@
 
 import io
 import subprocess
+from collections.abc import Iterable
+from decimal import Decimal
 from pathlib import Path
-from typing import TypeVar
+from typing import Any, Callable, TypeVar, override
 
-import fitz
 import cairosvg
+import fitz
 import numpy as np
 from PIL import Image
 
@@ -29,6 +31,22 @@ _latex_template = """
 """
 
 _base_path = Path(__file__).parent
+
+
+class FloatWrap:
+    def __init__(self, value: float):
+        self.value: float = value
+
+    def __sub__(self, value: "FloatWrap", /) -> "FloatWrap":
+        return FloatWrap(self.value - value.value)
+
+    @override
+    def __str__(self) -> str:
+        return f"{self.value:g}"
+
+    @override
+    def __eq__(self, value: Any, /) -> bool:
+        return self.value == value
 
 
 def wrap_svg(content: str, height: int, width: int) -> str:
@@ -165,14 +183,33 @@ def test_cat_svg():
     arr, chains = cat_chains()
     height, width, _ = arr.shape
 
-    paths = "".join(
-        f'<path fill="#{color}" d="{"".join(paths)}"/>'
-        for color, paths in svg_paths(chains, relative=True)
-    )
-    svg = wrap_svg(paths, height, width)
-    svg_arr = svg_to_arr(svg, height, width)
+    def work(
+        make_paths: Callable[[PointChainMap[str]], Iterable[tuple[str, Iterable[str]]]],
+    ):
+        paths = "".join(
+            f'<path fill="#{color}" d="{"".join(paths)}"/>'
+            for color, paths in make_paths(chains)
+        )
+        svg = wrap_svg(paths, height, width)
+        svg_arr = svg_to_arr(svg, height, width)
 
-    assert np.array_equal(arr, svg_arr), "SVG render does not match original image."
+        assert np.array_equal(arr, svg_arr), "SVG render does not match original image."
+
+    work(lambda chains: svg_paths(chains, relative=True))
+    work(
+        lambda chains: svg_paths(
+            chains,
+            point_transform=lambda p: (Decimal(p[0]), Decimal(p[1])),
+            relative=True,
+        )
+    )
+    work(
+        lambda chains: svg_paths(
+            chains,
+            point_transform=lambda p: (FloatWrap(p[0]), FloatWrap(p[1])),
+            relative=True,
+        )
+    )
 
 
 def test_cat_tikz(tmp_path: Path):
