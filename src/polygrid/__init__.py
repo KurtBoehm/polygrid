@@ -9,7 +9,7 @@ from collections.abc import Iterable
 from decimal import Decimal
 from typing import Callable, Protocol, Self, TypeVar
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 __all__ = ["Point", "Edge", "polygonize", "tikz_paths", "svg_paths"]
 
