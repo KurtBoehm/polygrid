@@ -15,6 +15,8 @@ __all__ = ["Point", "Edge", "polygonize", "tikz_paths", "svg_paths"]
 
 
 class SvgCoordinate(Protocol):
+    """Numeric SVG coordinate supporting subtraction."""
+
     def __sub__(self, value: Self, /) -> Self: ...
 
 
@@ -39,7 +41,7 @@ def normalized_edge(p: Point, q: Point) -> Edge:
 
 
 def collinear(a: Point, b: Point, c: Point) -> bool:
-    """Return True if three grid points are collinear (share a row or a column)."""
+    """Return whether three grid points are collinear (share a row or a column)."""
     return (a[0] == b[0] == c[0]) or (a[1] == b[1] == c[1])
 
 
@@ -47,7 +49,7 @@ def connected_components(adj: dict[Point, set[Point]]) -> list[set[Point]]:
     """Compute the connected components of an undirected graph.
 
     :param adj: Adjacency sets mapping each vertex to its neighbors.
-    :returns: A list of vertex sets, one per connected component.
+    :returns: One vertex set per connected component.
     """
     unvisited: set[Point] = set(adj)
     components: list[set[Point]] = []
@@ -74,40 +76,43 @@ def polygonize(
     grid: list[list[T]],
     equals: Callable[[T, T], bool] = lambda a, b: a == b,
     ignore: Callable[[T], bool] = lambda _: False,
+    remove_collinear: bool = True,
 ) -> PointChainMap[T]:
     """
-    Extract simplified polygon boundaries for all 4-connected regions in a grid.
+    Extract polygon boundaries for all 4-connected regions in a grid.
 
-    The input ``grid`` is interpreted as an ``n × m`` array of cell values.
-    For each value ``v`` and each 4-connected component of cells with value ``v``
-    (according to ``equals``) that is not ignored by ``ignore``, this function
-    computes polygonal boundaries on the underlying integer grid.
+    The ``grid`` is an ``n × m`` array of cell values. For each distinct value ``v``
+    and each 4-connected component of cells with value ``v`` (according to ``equals``)
+    that is not ignored by ``ignore``, this function computes its boundary
+    on the underlying integer grid.
 
-    The boundary of a component is represented as a list of polygon groups.
+    A component’s boundary is represented as a list of polygon groups.
     Each group is a list of closed chains, where each chain is a cyclic
-    sequence of boundary points. If a group contains more than one chain,
+    sequence of boundary points. If a group contains multiple chains,
     it uses the even-odd fill rule to represent outer boundaries and holes.
-    Collinear vertices are removed to simplify the result.
 
     :param grid:
-        2D grid of cell values.
+        Rectangular 2D grid of cell values.
     :param equals:
         Equivalence predicate on cell values used to group cells into regions.
-        Defaults to ``a == b``.
+        Default: ``a == b``.
     :param ignore:
         Predicate selecting cell values that should be ignored.
-        Defaults to always returning ``False`` (no value is ignored).
+        Ignored cells do not produce polygons. Default: ignore nothing.
+    :param remove_collinear:
+        If ``True`` (default), drop vertices that are collinear with their neighbors
+        to simplify polygons.
+        If ``False``, keep all grid corner points.
     :returns:
-        A mapping from values to point chains. For each distinct non-ignored
-        value, the point chains are a list of polygon groups describing all
-        connected regions with that value.
+        Mapping from each distinct, non-ignored value to its polygon groups,
+        each of which is a list of closed chains.
     """
     point_chains: PointChainMap[T] = {}
 
     n, [m] = len(grid), {len(row) for row in grid}
 
     def neighbors(r: int, c: int) -> Iterable[Point]:
-        """Yield 4-neighborhood grid coordinates within the bounds."""
+        """Yield 4-connected neighbors of cell ``(r, c)`` within bounds."""
         for dr, dc in ((-1, 0), (0, -1), (0, 1), (1, 0)):
             nr, nc = r + dr, c + dc
             if 0 <= nr < n and 0 <= nc < m:
@@ -231,14 +236,15 @@ def polygonize(
 
                     chain = new_chain
 
-                # Remove collinear vertices to simplify polygons.
-                i = 0
-                while i < len(chain):
-                    p0, p1, p2 = chain[i - 1], chain[i], chain[(i + 1) % len(chain)]
-                    if collinear(p0, p1, p2):
-                        del chain[i]
-                    else:
-                        i += 1
+                if remove_collinear:
+                    # Remove collinear vertices to simplify polygons.
+                    i = 0
+                    while i < len(chain):
+                        p0, p1, p2 = chain[i - 1], chain[i], chain[(i + 1) % len(chain)]
+                        if collinear(p0, p1, p2):
+                            del chain[i]
+                        else:
+                            i += 1
 
                 chains.append(chain)
 
@@ -255,17 +261,14 @@ def _key_tikz_paths(
     """
     Yield TikZ path specifications for one value’s polygon groups.
 
-    Each element of ``point_chains`` is a group of chains (polygons) that becomes
-    a single TikZ path consisting of closed subpaths.
-
     :param point_chains:
         Polygon groups for a single value as returned by :func:`polygonize`.
     :param point_transform:
-        Mapping from grid points to TikZ coordinates.
-        Defaults to ``lambda p: (-p[0], p[1])``, i.e. flip the vertical axis
-        (TikZ ``y`` increases upward) and keep the horizontal coordinate.
+        Map from ``(row, column)`` to TikZ coordinates ``(y, x)``.
+        The default flips the vertical axis (TikZ ``y`` increases upward) and keeps
+        the horizontal coordinate.
     :returns:
-        An iterator of TikZ path strings suitable for ``\\path`` commands.
+        TikZ path strings, one per polygon group.
     """
     for chains in point_chains:
         # Each chain becomes a closed path.
@@ -287,18 +290,19 @@ def tikz_paths(
     :param point_chain_map:
         Polygon groups per value as returned by :func:`polygonize`.
     :param point_transform:
-        Mapping from grid points to TikZ coordinates.
-        Defaults to ``lambda p: (-p[0], p[1])``, i.e. flip the vertical axis
-        (TikZ ``y`` increases upward) and keep the horizontal coordinate.
+        Map from ``(row, column)`` to TikZ coordinates ``(y, x)``.
+        The default flips the vertical axis (TikZ ``y`` increases upward) and keeps
+        the horizontal coordinate.
     :returns:
-        An iterator of ``(value, paths)`` pairs. For each value,
-        ``paths`` is an iterator of TikZ path strings, one per polygon group.
+        ``(value, paths)`` pairs, where ``paths`` yields one TikZ path
+        per polygon group.
     """
     for key, point_chains in point_chain_map.items():
         yield key, _key_tikz_paths(point_chains, point_transform=point_transform)
 
 
 def _format_svg_coord(v: SvgCoordinate):
+    """Format a coordinate value for SVG path data."""
     if isinstance(v, Decimal):
         return f"{v.normalize():g}"
     if isinstance(v, (int, float)):
@@ -313,19 +317,18 @@ def _key_svg_paths(
     relative: bool,
 ) -> Iterable[str]:
     """
-    Yield SVG path data (``d`` attribute) for one value’s polygon groups.
+    Yield SVG path ``d`` attributes for one value’s polygon groups.
 
     :param point_chains:
         Polygon groups for a single value as returned by :func:`polygonize`.
     :param point_transform:
-        Mapping from grid points to SVG coordinates.
-        Defaults to the identity mapping (coordinates unchanged).
+        Map from grid points to SVG coordinates. Default: identity.
     :param relative:
-        Whether to allow relative moves between successive groups
-        if that shortens the string representation.
+        Whether to allow relative moves between successive groups.
+        If ``True``, each group after the first may start with a relative ``m`` command
+        if it is shorter than the corresponding absolute ``M``.
     :returns:
-        An iterator of SVG path data strings, each consisting of one or more
-        closed subpaths (polygons).
+        SVG path ``d`` strings, one per polygon group.
     """
     f = _format_svg_coord
 
@@ -374,19 +377,19 @@ def svg_paths(
     relative: bool,
 ) -> Iterable[tuple[T, Iterable[str]]]:
     """
-    Convert polygon chains to SVG path data strings.
+    Convert polygon chains to SVG path ``d`` attributes.
 
     :param point_chain_map:
         Polygon groups per value as returned by :func:`polygonize`.
     :param point_transform:
-        Mapping from grid points to SVG coordinates.
-        Defaults to the identity mapping (coordinates unchanged).
+        Map from grid points to SVG coordinates. Default: identity.
     :param relative:
-        Whether to allow relative moves between successive groups
-        if that shortens the string representation.
+        Whether to allow relative moves between successive groups.
+        If ``True``, each group after the first may start with a relative ``m`` command
+        if it is shorter than the corresponding absolute ``M``.
     :returns:
-        An iterator of ``(value, paths)`` pairs. For each value,
-        ``paths`` is an iterator of SVG ``d`` strings, one per polygon group.
+        ``(value, paths)`` pairs, where ``paths`` yields one SVG ``d`` string
+        per polygon group.
     """
     for key, point_chains in point_chain_map.items():
         polys = _key_svg_paths(

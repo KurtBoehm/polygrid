@@ -34,16 +34,26 @@ _base_path = Path(__file__).parent
 
 
 class FloatWrap:
+    """Lightweight wrapper around ``float`` used to test custom point types.
+
+    Supports subtraction and string conversion so that it can be used as a
+    coordinate type in :func:`svg_paths` / :func:`tikz_paths`.
+    """
+
     def __init__(self, value: float):
+        """Initialize the wrapper with a ``float`` value."""
         self.value: float = value
 
     def __sub__(self, value: "FloatWrap", /) -> "FloatWrap":
+        """Return the difference between two wrapped values."""
         return FloatWrap(self.value - value.value)
 
     def __str__(self) -> str:
+        """Format the wrapped value using a ``g`` format specifier."""
         return f"{self.value:g}"
 
     def __eq__(self, value: Any, /) -> bool:
+        """Compare the wrapped value with another object."""
         return self.value == value
 
 
@@ -178,12 +188,18 @@ def cat_chains() -> tuple[np.ndarray, PointChainMap[str]]:
 
 
 def test_cat_svg():
+    """
+    Verify that the SVG polygonization of ``cat.png`` round-trips the image exactly.
+    """
     arr, chains = cat_chains()
     height, width, _ = arr.shape
 
     def work(
         make_paths: Callable[[PointChainMap[str]], Iterable[tuple[str, Iterable[str]]]],
     ):
+        """
+        Helper to build SVG paths using :func:`make_paths` and compare to original.
+        """
         paths = "".join(
             f'<path fill="#{color}" d="{"".join(paths)}"/>'
             for color, paths in make_paths(chains)
@@ -211,6 +227,10 @@ def test_cat_svg():
 
 
 def test_cat_tikz(tmp_path: Path):
+    """
+    Verify that the TikZ polygonization of ``cat.png`` round-trips the image
+    within ±1 per channel.
+    """
     arr, chains = cat_chains()
     height, width, _ = arr.shape
 
@@ -232,7 +252,9 @@ def qr_chains() -> tuple[np.ndarray, PointChainMap[bool]]:
 
 
 def test_qr_svg():
-    """SVG polygonization of qr.png matches original pixels."""
+    """
+    Verify that the SVG polygonization of ``qr.png`` round-trips the image exactly.
+    """
     arr, chains = qr_chains()
     height, width = arr.shape
 
@@ -247,7 +269,9 @@ def test_qr_svg():
 
 
 def test_qr_tikz(tmp_path: Path):
-    """TikZ polygonization of qr.png matches original pixels (±1)."""
+    """
+    Verify that the TikZ polygonization of ``qr.png`` round-trips the image exactly.
+    """
     arr, chains = qr_chains()
     height, width = arr.shape
 
